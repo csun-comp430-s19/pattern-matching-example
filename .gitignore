@@ -1,0 +1,10 @@
+# Emacs temp files
+*~
+\#*\#
+
+# Mac stuff
+.DS_Store
+
+# Compiled files
+project
+target
