@@ -6,6 +6,44 @@ case class ConstructorInfo(
   correspondingUserType: UserDefinedTypeName,
   expectedTypes: Seq[Type])
 
+object Typechecker {
+  def apply(prog: Program): Typechecker = {
+    def addTypedef(
+      constructorsForType: Map[UserDefinedTypeName, Set[ConstructorName]],
+      constructorInfo: Map[ConstructorName, ConstructorInfo],
+      typedef: TypeDefinition): (Map[UserDefinedTypeName, Set[ConstructorName]], Map[ConstructorName, ConstructorInfo]) = {
+
+      if (constructorsForType.contains(typedef.name)) {
+        throw TypeErrorException("Duplicate type name: " + typedef.name)
+      }
+      val constructorsSeq = typedef.constructors.map(_.name)
+      val constructorsSet = constructorsSeq.toSet
+      if (constructorsSeq.size != constructorsSet.size) {
+        throw TypeErrorException("Duplicate constructor name within typedef: " + typedef.name)
+      }
+
+      val newConstructorsForType = constructorsForType + (typedef.name -> constructorsSet)
+      val newConstructorInfo = typedef.constructors.foldLeft(constructorInfo)((res, cur) => {
+        if (res.contains(cur.name)) {
+          throw TypeErrorException("Duplicate constructor name: " + cur.name)
+        }
+        res + (cur.name -> ConstructorInfo(typedef.name, cur.params))
+      })
+      (newConstructorsForType, newConstructorInfo)
+    }
+
+    val initial: (Map[UserDefinedTypeName, Set[ConstructorName]], Map[ConstructorName, ConstructorInfo]) =
+      (Map(), Map())
+    val (finalConstructorsForType, finalConstructorInfo) = prog.typedefs.foldLeft(initial)((res, cur) =>
+      addTypedef(res._1, res._2, cur))
+    new Typechecker(finalConstructorsForType, finalConstructorInfo)
+  } // apply
+
+  def typecheck(prog: Program): Type = {
+    apply(prog).typeof(prog.body, Map())
+  } // typecheck
+} // Typechecker
+
 class Typechecker(
   val constructorsForType: Map[UserDefinedTypeName, Set[ConstructorName]],
   val constructorInfo: Map[ConstructorName, ConstructorInfo]) {
@@ -44,17 +82,20 @@ class Typechecker(
   sealed trait MatchValue {
     def join(other: MatchValue): MatchValue
     def isMatchAll: Boolean
-  }
+  } // MatchValue
+
   case object MatchAll extends MatchValue {
     def join(other: MatchValue): MatchValue = {
       throw TypeErrorException("Pattern will never be reached")
-    }
+    } // join
     def isMatchAll: Boolean = true
-  }
+  } // MatchAll
+
   case object MatchNone extends MatchValue {
     def join(other: MatchValue): MatchValue = other
     def isMatchAll: Boolean = false
-  }
+  } // MatchNone
+
   case class MatchSome(
     forType: UserDefinedTypeName,
     matchedSoFar: Map[ConstructorName, Seq[MatchValue]]) extends MatchValue {

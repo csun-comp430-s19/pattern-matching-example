@@ -22,3 +22,5 @@ case class IntExpression(value: Int) extends Expression
 case class LetExpression(variable: Variable, value: Expression, in: Expression) extends Expression
 case class CallConstructor(name: ConstructorName, params: Seq[Expression]) extends Expression
 case class PatternMatch(on: Expression, cases: Seq[Case]) extends Expression
+
+case class Program(typedefs: Seq[TypeDefinition], body: Expression)
