@@ -292,4 +292,85 @@ class TestTypechecker extends FlatSpec {
               IntExpression(2))))))
     }
   }
+
+  it should "accept a well-typed pattern match: nested patterns - all patterns covered" in {
+    assertResult(IntType) {
+      typecheck(Program(Seq(INT_LIST_DEFINITION),
+        PatternMatch(
+          CallConstructor(NIL_NAME, Seq()),
+          Seq(
+            Case(
+              // Cons(head1, Cons(head2, tail)) => 0
+              ConstructorPattern(
+                CONS_NAME,
+                Seq(
+                  VariablePattern(Variable("head1")),
+                  ConstructorPattern(
+                    CONS_NAME,
+                    Seq(
+                      VariablePattern(Variable("head2")),
+                      VariablePattern(Variable("tail")))))),
+              IntExpression(0)),
+            Case(
+              // Cons(head, tail) => 1
+              ConstructorPattern(
+                CONS_NAME,
+                Seq(VariablePattern(Variable("head")), VariablePattern(Variable("tail")))),
+              IntExpression(1)),
+            Case(
+              // Nil => 2
+              ConstructorPattern(NIL_NAME, Seq()),
+              IntExpression(2))))))
+    }
+  }
+
+  it should "reject an ill-typed pattern match: nested case missing" in {
+    assertThrows[TypeErrorException] {
+      typecheck(Program(Seq(INT_LIST_DEFINITION),
+        PatternMatch(
+          CallConstructor(NIL_NAME, Seq()),
+          Seq(
+            Case(
+              // Cons(head1, Cons(head2, tail)) => 0
+              ConstructorPattern(
+                CONS_NAME,
+                Seq(
+                  VariablePattern(Variable("head1")),
+                  ConstructorPattern(
+                    CONS_NAME,
+                    Seq(
+                      VariablePattern(Variable("head2")),
+                      VariablePattern(Variable("tail")))))),
+              IntExpression(0)),
+            Case(
+              // Nil => 2
+              ConstructorPattern(NIL_NAME, Seq()),
+              IntExpression(2))))))
+    }
+  }
+
+  it should "accept a well-typed pattern match: nested case with catch-all" in {
+    assertResult(IntType) {
+      typecheck(Program(Seq(INT_LIST_DEFINITION),
+        PatternMatch(
+          CallConstructor(NIL_NAME, Seq()),
+          Seq(
+            Case(
+              // Cons(head1, Cons(head2, tail)) => 0
+              ConstructorPattern(
+                CONS_NAME,
+                Seq(
+                  VariablePattern(Variable("head1")),
+                  ConstructorPattern(
+                    CONS_NAME,
+                    Seq(
+                      VariablePattern(Variable("head2")),
+                      VariablePattern(Variable("tail")))))),
+              IntExpression(0)),
+            Case(
+              // x => 2
+              VariablePattern(Variable("x")),
+              IntExpression(2))))))
+    }
+  }
 } // TestTypechecker
