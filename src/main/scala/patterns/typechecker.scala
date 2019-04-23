@@ -85,9 +85,7 @@ class Typechecker(
   } // MatchValue
 
   case object MatchAll extends MatchValue {
-    def join(other: MatchValue): MatchValue = {
-      throw TypeErrorException("Pattern will never be reached")
-    } // join
+    def join(other: MatchValue): MatchValue = other
     def isMatchAll: Boolean = true
   } // MatchAll
 
@@ -184,6 +182,11 @@ class Typechecker(
                 val (returnType, curMatch) = res
                 val Case(curPattern, curExp) = cur
                 val nextMatch = curMatch.join(patternToMatchValue(curPattern))
+                // if we haven't become less constrained, then there is no situation under
+                // which we can execute this code
+                if (curMatch == nextMatch) {
+                  throw TypeErrorException("Dead code: " + curExp)
+                }
                 val addVariables = patternVariables(userType, curPattern)
                 val curReturnType = typeof(curExp, env ++ addVariables)
                 val nextReturnType = returnType match {
