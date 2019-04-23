@@ -161,6 +161,10 @@ class Typechecker(
   def typeof(exp: Expression, env: Map[Variable, Type]): Type = {
     exp match {
       case IntExpression(_) => IntType
+      case VariableExpression(variable) => {
+        env.getOrElse(variable,
+          throw TypeErrorException("Variable not in scope: " + variable))
+      }
       case LetExpression(variable, value, in) => {
         val valueType = typeof(value, env)
         typeof(in, env + (variable -> valueType))
@@ -173,7 +177,7 @@ class Typechecker(
         UserDefinedType(typeName)
       }
       case PatternMatch(on, cases) => {
-        typeof(exp, env) match {
+        typeof(on, env) match {
           case userType@UserDefinedType(_) => {
             val (Some(finalReturn), finalMatch) =
               cases.foldLeft((None: Option[Type], MatchNone: MatchValue))((res, cur) => {

@@ -19,6 +19,7 @@ case class Case(pattern: Pattern, code: Expression)
 
 sealed trait Expression
 case class IntExpression(value: Int) extends Expression
+case class VariableExpression(variable: Variable) extends Expression
 case class LetExpression(variable: Variable, value: Expression, in: Expression) extends Expression
 case class CallConstructor(name: ConstructorName, params: Seq[Expression]) extends Expression
 case class PatternMatch(on: Expression, cases: Seq[Case]) extends Expression
